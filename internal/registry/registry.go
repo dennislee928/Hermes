@@ -4,12 +4,23 @@ import (
 	"hermes/internal/config"
 	"hermes/internal/providerapi"
 	"hermes/internal/provider/abuseipdb"
+	"hermes/internal/provider/binaryedge"
 	"hermes/internal/provider/circl"
+	"hermes/internal/provider/criminalip"
+	"hermes/internal/provider/emailrep"
 	"hermes/internal/provider/hibp"
+	"hermes/internal/provider/hybridanalysis"
+	"hermes/internal/provider/ipasnhistory"
+	"hermes/internal/provider/malshare"
+	"hermes/internal/provider/malwarebazaar"
 	"hermes/internal/provider/nvd"
 	"hermes/internal/provider/phishtank"
+	"hermes/internal/provider/pulsedive"
+	"hermes/internal/provider/ssllabs"
+	"hermes/internal/provider/threatminer"
 	"hermes/internal/provider/urlscan"
 	"hermes/internal/provider/virustotal"
+	"hermes/internal/provider/vulners"
 )
 
 // Registry holds all provider adapters and selects by indicator type.
@@ -29,6 +40,17 @@ func NewRegistry(cfg *config.Config) *Registry {
 		hibp.NewClient(cfg.HIBPAPIKey),
 		nvd.NewClient(cfg.NVDAPIKey),
 		circl.NewClient(),
+		binaryedge.NewClient(cfg.BinaryEdgeAPIKey),
+		criminalip.NewClient(cfg.CriminalIPAPIKey),
+		pulsedive.NewClient(cfg.PulsediveAPIKey),
+		threatminer.NewClient(""),
+		emailrep.NewClient(cfg.EmailRepAPIKey),
+		vulners.NewClient(cfg.VulnersAPIKey),
+		ipasnhistory.NewClient(""),
+		hybridanalysis.NewClient(cfg.HybridAnalysisAPIKey),
+		malshare.NewClient(cfg.MalshareAPIKey),
+		malwarebazaar.NewClient(cfg.MalwareBazaarAPIKey),
+		ssllabs.NewClient(),
 	}
 	for _, a := range adapters {
 		byCode[a.Code()] = a

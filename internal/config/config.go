@@ -23,6 +23,13 @@ type Config struct {
 	NVDAPIKey                 string
 	BinaryEdgeAPIKey          string
 	CriminalIPAPIKey          string
+	PulsediveAPIKey           string
+	EmailRepAPIKey            string
+	VulnersAPIKey             string
+	// Batch 3: Malware / SSL
+	HybridAnalysisAPIKey     string
+	MalshareAPIKey            string
+	MalwareBazaarAPIKey       string
 }
 
 // Load reads .env if present and populates Config from environment.
@@ -46,6 +53,12 @@ func Load() (*Config, error) {
 		NVDAPIKey:                 getEnv("NVD_API_KEY", ""),
 		BinaryEdgeAPIKey:          getEnv("BINARYEDGE_API_KEY", ""),
 		CriminalIPAPIKey:          getEnv("CRIMINALIP_API_KEY", ""),
+		PulsediveAPIKey:           getEnv("PULSEDIVE_API_KEY", ""),
+		EmailRepAPIKey:            getEnv("EMAILREP_API_KEY", ""),
+		VulnersAPIKey:             getEnv("VULNERS_API_KEY", ""),
+		HybridAnalysisAPIKey:      getEnv("HYBRIDANALYSIS_API_KEY", ""),
+		MalshareAPIKey:            getEnv("MALSHARE_API_KEY", ""),
+		MalwareBazaarAPIKey:       getEnv("MALWAREBAZAAR_API_KEY", ""),
 	}, nil
 }
 
