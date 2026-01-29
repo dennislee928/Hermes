@@ -10,6 +10,8 @@ import (
 	"hermes/internal/handler"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -18,9 +20,14 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
+	var db *gorm.DB
 	if cfg.PostgresDSN != "" {
 		if err := database.RunMigrations(cfg.PostgresDSN); err != nil {
 			log.Fatalf("migrate: %v", err)
+		}
+		db, err = gorm.Open(postgres.Open(cfg.PostgresDSN), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("open db: %v", err)
 		}
 	}
 
@@ -38,9 +45,9 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// API v1 group (extended with lookup and provider routes)
+	// API v1 group (lookup and provider routes)
 	v1 := r.Group("/api/v1")
-	handler.RegisterRoutes(v1, cfg)
+	handler.RegisterRoutes(v1, cfg, db)
 
 	addr := ":" + strconv.Itoa(cfg.HTTPPort)
 	log.Printf("listening on %s", addr)

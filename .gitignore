@@ -1,2 +1,7 @@
+# Local env (do not commit)
+.env
+.env.local
+*.exe
+hermes
 indo_src.txt
 skill.sh
