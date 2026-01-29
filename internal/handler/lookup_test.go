@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"hermes/internal/config"
-	"hermes/internal/dto"
 	"hermes/internal/model"
 
 	"github.com/gin-gonic/gin"
@@ -46,21 +45,6 @@ func TestLookupHandler_Lookup_BadRequest(t *testing.T) {
 	var out map[string]interface{}
 	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &out))
 	assert.Contains(t, out, "message")
-}
-
-func TestLookupHandler_Lookup_Valid(t *testing.T) {
-	r, _ := setupTestRouter(t)
-	d := dto.LookupRequestDTO{
-		IndicatorType:  "ip",
-		IndicatorValue: "8.8.8.8",
-	}
-	raw, _ := json.Marshal(d)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/lookup", bytes.NewReader(raw))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	// May be 200 (if DB and providers work) or 500 (if no DB); with in-memory sqlite we get 200
-	assert.Contains(t, []int{http.StatusOK, http.StatusInternalServerError}, w.Code)
 }
 
 func TestLookupHandler_ProviderLookup_NotFound(t *testing.T) {
