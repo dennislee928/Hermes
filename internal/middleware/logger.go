@@ -28,12 +28,10 @@ func Logger() gin.HandlerFunc {
 		path := c.Request.URL.Path
 		clientIP := c.ClientIP()
 		method := c.Request.Method
-		statusCode := c.Writer.Status()
-
 		c.Next()
 
-		statusCode = c.Writer.Status()
+		statusCode := c.Writer.Status()
 		latency := time.Since(start)
-		log.Printf("[%s] %d %s %s %s %v", method, statusCode, path, clientIP, latency.String(), c.Errors.String())
+		log.Printf("[%s] %d %s %s %v", method, statusCode, path, clientIP, latency)
 	}
 }

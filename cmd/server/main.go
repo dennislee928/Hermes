@@ -8,6 +8,7 @@ import (
 	"hermes/database"
 	"hermes/internal/config"
 	"hermes/internal/handler"
+	"hermes/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -38,7 +39,8 @@ func main() {
 	}
 
 	r := gin.New()
-	r.Use(gin.Recovery())
+	r.Use(middleware.Logger())
+	r.Use(middleware.Recovery())
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
