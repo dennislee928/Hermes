@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+*.exe
+hermes
+docker/
+*.md
+indo_src.txt
+skill.sh
