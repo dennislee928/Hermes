@@ -7,7 +7,7 @@ import (
 	"hermes/internal/config"
 	"hermes/internal/dto"
 	"hermes/internal/model"
-	"hermes/internal/provider"
+	"hermes/internal/providerapi"
 	"hermes/internal/registry"
 	"hermes/internal/repository"
 	"hermes/internal/vo"
@@ -38,10 +38,9 @@ func NewLookupService(cfg *config.Config, reg *registry.Registry, db *gorm.DB) *
 
 // Lookup runs a unified lookup: creates request, calls adapters in parallel, stores results, returns VO.
 func (s *LookupService) Lookup(ctx context.Context, d *dto.LookupRequestDTO) (*vo.LookupResponseVO, error) {
-	indicatorType := provider.IndicatorType(d.IndicatorType)
-	adapters := s.registry.AdaptersForType(indicatorType)
+	adapters := s.registry.AdaptersForType(d.IndicatorType)
 	if len(d.Providers) > 0 {
-		filtered := make([]provider.Adapter, 0)
+		filtered := make([]providerapi.Adapter, 0)
 		allowed := make(map[string]bool)
 		for _, p := range d.Providers {
 			allowed[p] = true
@@ -68,9 +67,9 @@ func (s *LookupService) Lookup(ctx context.Context, d *dto.LookupRequestDTO) (*v
 	var wg sync.WaitGroup
 	for _, a := range adapters {
 		wg.Add(1)
-		go func(adapter provider.Adapter) {
+		go func(adapter providerapi.Adapter) {
 			defer wg.Done()
-			res, err := adapter.Lookup(ctx, indicatorType, d.IndicatorValue)
+			res, err := adapter.Lookup(ctx, d.IndicatorType, d.IndicatorValue)
 			mu.Lock()
 			results[adapter.Code()] = vo.ProviderResultVO{
 				ProviderCode: res.ProviderCode,

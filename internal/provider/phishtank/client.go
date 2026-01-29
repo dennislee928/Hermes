@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"hermes/internal/provider"
+	"hermes/internal/providerapi"
 )
 
 const checkURL = "https://checkurl.phishtank.com/checkurl/"
@@ -27,18 +27,18 @@ func NewClient(appKey string) *Client {
 	}
 }
 
-// Code implements provider.Adapter.
+// Code implements providerapi.Adapter.
 func (c *Client) Code() string { return "phishtank" }
 
-// SupportedTypes implements provider.Adapter.
-func (c *Client) SupportedTypes() []provider.IndicatorType {
-	return []provider.IndicatorType{provider.IndicatorURL}
+// SupportedTypes implements providerapi.Adapter.
+func (c *Client) SupportedTypes() []string {
+	return []string{"url"}
 }
 
-// Lookup implements provider.Adapter. Only URL is supported.
-func (c *Client) Lookup(ctx context.Context, indicatorType provider.IndicatorType, value string) (provider.Result, error) {
-	if indicatorType != provider.IndicatorURL {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: "unsupported type: " + string(indicatorType)}, nil
+// Lookup implements providerapi.Adapter. Only URL is supported.
+func (c *Client) Lookup(ctx context.Context, indicatorType string, value string) (providerapi.Result, error) {
+	if indicatorType != "url" {
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: "unsupported type: " + indicatorType}, nil
 	}
 
 	form := url.Values{}
@@ -50,24 +50,24 @@ func (c *Client) Lookup(ctx context.Context, indicatorType provider.IndicatorTyp
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, checkURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	defer resp.Body.Close()
 
 	var out map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	success := resp.StatusCode == http.StatusOK
 	errMsg := ""
 	if !success {
 		errMsg = fmt.Sprintf("HTTP %d", resp.StatusCode)
 	}
-	return provider.Result{ProviderCode: c.Code(), Success: success, Data: out, Error: errMsg}, nil
+	return providerapi.Result{ProviderCode: c.Code(), Success: success, Data: out, Error: errMsg}, nil
 }

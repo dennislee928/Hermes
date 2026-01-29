@@ -2,7 +2,7 @@ package registry
 
 import (
 	"hermes/internal/config"
-	"hermes/internal/provider"
+	"hermes/internal/providerapi"
 	"hermes/internal/provider/abuseipdb"
 	"hermes/internal/provider/circl"
 	"hermes/internal/provider/hibp"
@@ -14,14 +14,14 @@ import (
 
 // Registry holds all provider adapters and selects by indicator type.
 type Registry struct {
-	adapters []provider.Adapter
-	byCode   map[string]provider.Adapter
+	adapters []providerapi.Adapter
+	byCode   map[string]providerapi.Adapter
 }
 
 // NewRegistry builds a registry from config.
 func NewRegistry(cfg *config.Config) *Registry {
-	byCode := make(map[string]provider.Adapter)
-	adapters := []provider.Adapter{
+	byCode := make(map[string]providerapi.Adapter)
+	adapters := []providerapi.Adapter{
 		abuseipdb.NewClient(cfg.AbuseIPDBAPIKey),
 		virustotal.NewClient(cfg.VirusTotalAPIKey),
 		phishtank.NewClient(cfg.PhishTankAppKey),
@@ -36,9 +36,9 @@ func NewRegistry(cfg *config.Config) *Registry {
 	return &Registry{adapters: adapters, byCode: byCode}
 }
 
-// AdaptersForType returns adapters that support the given indicator type.
-func (r *Registry) AdaptersForType(t provider.IndicatorType) []provider.Adapter {
-	var out []provider.Adapter
+// AdaptersForType returns adapters that support the given indicator type (e.g. ip, domain, url).
+func (r *Registry) AdaptersForType(t string) []providerapi.Adapter {
+	var out []providerapi.Adapter
 	for _, a := range r.adapters {
 		for _, st := range a.SupportedTypes() {
 			if st == t {
@@ -51,7 +51,7 @@ func (r *Registry) AdaptersForType(t provider.IndicatorType) []provider.Adapter 
 }
 
 // AdapterByCode returns the adapter for the given provider code, or nil.
-func (r *Registry) AdapterByCode(code string) provider.Adapter {
+func (r *Registry) AdapterByCode(code string) providerapi.Adapter {
 	return r.byCode[code]
 }
 

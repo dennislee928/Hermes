@@ -5,7 +5,6 @@ import (
 
 	"hermes/internal/config"
 	"hermes/internal/dto"
-	"hermes/internal/provider"
 	"hermes/internal/registry"
 	"hermes/internal/service"
 	"hermes/internal/vo"
@@ -30,6 +29,16 @@ func NewLookupHandler(cfg *config.Config, db *gorm.DB) *LookupHandler {
 }
 
 // Lookup handles POST /lookup (unified lookup).
+// @Summary      Unified lookup
+// @Description  Run lookup across all providers that support the indicator type
+// @Tags         lookup
+// @Accept       json
+// @Produce      json
+// @Param        body  body  dto.LookupRequestDTO  true  "Lookup request"
+// @Success      200  {object}  vo.LookupResponseVO
+// @Failure      400  {object}  vo.ErrorVO
+// @Failure      500  {object}  vo.ErrorVO
+// @Router       /lookup [post]
 func (h *LookupHandler) Lookup(c *gin.Context) {
 	var req dto.LookupRequestDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -44,7 +53,19 @@ func (h *LookupHandler) Lookup(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-// ProviderLookup handles GET /providers/:code/ip/:ip, /providers/:code/url/:url, etc.
+// ProviderLookup handles GET /providers/:code/:type/:value.
+// @Summary      Single-provider lookup
+// @Description  Lookup using one provider by code (e.g. abuseipdb, virustotal)
+// @Tags         providers
+// @Produce      json
+// @Param        code   path  string  true  "Provider code (e.g. abuseipdb)"
+// @Param        type   path  string  true  "Indicator type (ip, domain, url, hash, email)"
+// @Param        value  path  string  true  "Indicator value"
+// @Success      200  {object}  vo.ProviderLookupResponseVO
+// @Failure      400  {object}  vo.ErrorVO
+// @Failure      404  {object}  vo.ErrorVO
+// @Failure      500  {object}  vo.ProviderLookupResponseVO
+// @Router       /providers/{code}/{type}/{value} [get]
 func (h *LookupHandler) ProviderLookup(c *gin.Context) {
 	code := c.Param("code")
 	indicatorType := c.Param("type")   // ip, domain, url, hash, email
@@ -58,7 +79,7 @@ func (h *LookupHandler) ProviderLookup(c *gin.Context) {
 		c.JSON(http.StatusNotFound, vo.ErrorVO{Code: "NOT_FOUND", Message: "provider not found"})
 		return
 	}
-	res, err := adapter.Lookup(c.Request.Context(), provider.IndicatorType(indicatorType), value)
+	res, err := adapter.Lookup(c.Request.Context(), indicatorType, value)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, vo.ProviderLookupResponseVO{
 			ProviderCode: code,

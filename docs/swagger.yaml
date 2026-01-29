@@ -1,0 +1,159 @@
+basePath: /api/v1
+definitions:
+  hermes_internal_dto.LookupRequestDTO:
+    description: Request body for unified lookup
+    properties:
+      indicator_type:
+        description: 'IndicatorType is one of: ip, domain, url, hash, email'
+        enum:
+        - ip
+        - domain
+        - url
+        - hash
+        - email
+        example: ip
+        type: string
+      indicator_value:
+        description: IndicatorValue is the value to look up (e.g. IP, domain, URL,
+          hash, email)
+        example: 8.8.8.8
+        type: string
+      providers:
+        description: Providers optionally limits which providers to query (empty =
+          all enabled)
+        items:
+          type: string
+        type: array
+    required:
+    - indicator_type
+    - indicator_value
+    type: object
+  hermes_internal_vo.ErrorVO:
+    description: Standard error response
+    properties:
+      code:
+        example: BAD_REQUEST
+        type: string
+      message:
+        example: invalid request
+        type: string
+    type: object
+  hermes_internal_vo.LookupResponseVO:
+    description: Response for unified lookup across providers
+    properties:
+      indicator_type:
+        example: ip
+        type: string
+      indicator_value:
+        example: ""
+        type: string
+      request_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      results:
+        additionalProperties:
+          $ref: '#/definitions/hermes_internal_vo.ProviderResultVO'
+        type: object
+    type: object
+  hermes_internal_vo.ProviderLookupResponseVO:
+    properties:
+      data: {}
+      error:
+        type: string
+      provider_code:
+        type: string
+      success:
+        type: boolean
+    type: object
+  hermes_internal_vo.ProviderResultVO:
+    description: Single provider lookup result
+    properties:
+      data: {}
+      error:
+        type: string
+      provider_code:
+        example: abuseipdb
+        type: string
+      success:
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Unified lookup and per-provider lookup for threat intelligence, CVE,
+    and URL/domain security.
+  title: Hermes Cybersecurity Provider API
+  version: "1.0"
+paths:
+  /lookup:
+    post:
+      consumes:
+      - application/json
+      description: Run lookup across all providers that support the indicator type
+      parameters:
+      - description: Lookup request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hermes_internal_dto.LookupRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/hermes_internal_vo.LookupResponseVO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/hermes_internal_vo.ErrorVO'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/hermes_internal_vo.ErrorVO'
+      summary: Unified lookup
+      tags:
+      - lookup
+  /providers/{code}/{type}/{value}:
+    get:
+      description: Lookup using one provider by code (e.g. abuseipdb, virustotal)
+      parameters:
+      - description: Provider code (e.g. abuseipdb)
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Indicator type (ip, domain, url, hash, email)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Indicator value
+        in: path
+        name: value
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/hermes_internal_vo.ProviderLookupResponseVO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/hermes_internal_vo.ErrorVO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/hermes_internal_vo.ErrorVO'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/hermes_internal_vo.ProviderLookupResponseVO'
+      summary: Single-provider lookup
+      tags:
+      - providers
+swagger: "2.0"

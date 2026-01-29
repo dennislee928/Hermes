@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"hermes/internal/provider"
+	"hermes/internal/providerapi"
 )
 
 const baseURL = "https://haveibeenpwned.com/api/v3"
@@ -25,33 +25,33 @@ func NewClient(apiKey string) *Client {
 	}
 }
 
-// Code implements provider.Adapter.
+// Code implements providerapi.Adapter.
 func (c *Client) Code() string { return "hibp" }
 
-// SupportedTypes implements provider.Adapter.
-func (c *Client) SupportedTypes() []provider.IndicatorType {
-	return []provider.IndicatorType{provider.IndicatorEmail}
+// SupportedTypes implements providerapi.Adapter.
+func (c *Client) SupportedTypes() []string {
+	return []string{"email"}
 }
 
-// Lookup implements provider.Adapter. Only email is supported (breached account).
-func (c *Client) Lookup(ctx context.Context, indicatorType provider.IndicatorType, value string) (provider.Result, error) {
+// Lookup implements providerapi.Adapter. Only email is supported (breached account).
+func (c *Client) Lookup(ctx context.Context, indicatorType string, value string) (providerapi.Result, error) {
 	if c.apiKey == "" {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: "not configured"}, nil
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: "not configured"}, nil
 	}
-	if indicatorType != provider.IndicatorEmail {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: "unsupported type: " + string(indicatorType)}, nil
+	if indicatorType != "email" {
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: "unsupported type: " + indicatorType}, nil
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/breachedaccount/"+value+"?truncateResponse=false", nil)
 	if err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	req.Header.Set("hibp-api-key", c.apiKey)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	defer resp.Body.Close()
 
@@ -64,7 +64,7 @@ func (c *Client) Lookup(ctx context.Context, indicatorType provider.IndicatorTyp
 		data["breaches"] = []interface{}{}
 	}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Data: data, Error: fmt.Sprintf("HTTP %d", resp.StatusCode)}, nil
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Data: data, Error: fmt.Sprintf("HTTP %d", resp.StatusCode)}, nil
 	}
-	return provider.Result{ProviderCode: c.Code(), Success: success, Data: data}, nil
+	return providerapi.Result{ProviderCode: c.Code(), Success: success, Data: data}, nil
 }

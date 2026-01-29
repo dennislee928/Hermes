@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"hermes/internal/provider"
+	"hermes/internal/providerapi"
 )
 
 const baseURL = "https://urlscan.io/api/v1"
@@ -26,27 +26,27 @@ func NewClient(apiKey string) *Client {
 	}
 }
 
-// Code implements provider.Adapter.
+// Code implements providerapi.Adapter.
 func (c *Client) Code() string { return "urlscan" }
 
-// SupportedTypes implements provider.Adapter.
-func (c *Client) SupportedTypes() []provider.IndicatorType {
-	return []provider.IndicatorType{provider.IndicatorURL, provider.IndicatorDomain}
+// SupportedTypes implements providerapi.Adapter.
+func (c *Client) SupportedTypes() []string {
+	return []string{"url", "domain"}
 }
 
-// Lookup implements provider.Adapter. For URL we submit a scan and return result; for domain we search.
-func (c *Client) Lookup(ctx context.Context, indicatorType provider.IndicatorType, value string) (provider.Result, error) {
-	if indicatorType != provider.IndicatorURL && indicatorType != provider.IndicatorDomain {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: "unsupported type: " + string(indicatorType)}, nil
+// Lookup implements providerapi.Adapter. For URL we submit a scan and return result; for domain we search.
+func (c *Client) Lookup(ctx context.Context, indicatorType string, value string) (providerapi.Result, error) {
+	if indicatorType != "url" && indicatorType != "domain" {
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: "unsupported type: " + indicatorType}, nil
 	}
 
-	if indicatorType == provider.IndicatorURL {
+	if indicatorType == "url" {
 		return c.submitScan(ctx, value)
 	}
 	return c.search(ctx, "domain:"+value)
 }
 
-func (c *Client) submitScan(ctx context.Context, urlStr string) (provider.Result, error) {
+func (c *Client) submitScan(ctx context.Context, urlStr string) (providerapi.Result, error) {
 	body := map[string]string{"url": urlStr, "visibility": "private"}
 	if c.apiKey == "" {
 		body["visibility"] = "public"
@@ -54,7 +54,7 @@ func (c *Client) submitScan(ctx context.Context, urlStr string) (provider.Result
 	raw, _ := json.Marshal(body)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/scan/", bytes.NewReader(raw))
 	if err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
@@ -63,20 +63,20 @@ func (c *Client) submitScan(ctx context.Context, urlStr string) (provider.Result
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	defer resp.Body.Close()
 
 	var out map[string]interface{}
 	_ = json.NewDecoder(resp.Body).Decode(&out)
 	success := resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusAccepted
-	return provider.Result{ProviderCode: c.Code(), Success: success, Data: out, Error: fmt.Sprintf("HTTP %d", resp.StatusCode)}, nil
+	return providerapi.Result{ProviderCode: c.Code(), Success: success, Data: out, Error: fmt.Sprintf("HTTP %d", resp.StatusCode)}, nil
 }
 
-func (c *Client) search(ctx context.Context, q string) (provider.Result, error) {
+func (c *Client) search(ctx context.Context, q string) (providerapi.Result, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/search/?q="+q, nil)
 	if err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	req.Header.Set("Accept", "application/json")
 	if c.apiKey != "" {
@@ -85,12 +85,12 @@ func (c *Client) search(ctx context.Context, q string) (provider.Result, error) 
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return provider.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
+		return providerapi.Result{ProviderCode: c.Code(), Success: false, Error: err.Error()}, err
 	}
 	defer resp.Body.Close()
 
 	var out map[string]interface{}
 	_ = json.NewDecoder(resp.Body).Decode(&out)
 	success := resp.StatusCode == http.StatusOK
-	return provider.Result{ProviderCode: c.Code(), Success: success, Data: out, Error: fmt.Sprintf("HTTP %d", resp.StatusCode)}, nil
+	return providerapi.Result{ProviderCode: c.Code(), Success: success, Data: out, Error: fmt.Sprintf("HTTP %d", resp.StatusCode)}, nil
 }

@@ -1,3 +1,8 @@
+// @title           Hermes Cybersecurity Provider API
+// @version         1.0
+// @description     Unified lookup and per-provider lookup for threat intelligence, CVE, and URL/domain security.
+// @host            localhost:8080
+// @BasePath        /api/v1
 package main
 
 import (
@@ -6,11 +11,14 @@ import (
 	"strconv"
 
 	"hermes/database"
+	_ "hermes/docs"
 	"hermes/internal/config"
 	"hermes/internal/handler"
 	"hermes/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -46,6 +54,9 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	// Swagger
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API v1 group (lookup and provider routes)
 	v1 := r.Group("/api/v1")
